@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create Quiz 🛠️</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Create a Quiz 🛠️</h1>
+  <h2>Developed by Adenilson</h2>
+  <form id="initial-form">
+    <label for="quiz-name"><span style="color: red;">*</span>Quiz Name:</label>
+    <input type="text" id="quiz-name" required>
+    <label for="num-questions"><span style="color: red;">*</span>How many questions would you like to add?</label>
+    <input type="number" id="num-questions" min="1" required>
+    <label for="quiz-password"><span style="color: red;">*</span>Set a Password to Edit/Delete:</label>
+    <input type="password" id="quiz-password" required>
+    <button type="submit">Create Quiz 🚀</button>
+  </form>
+  
+  <form id="quiz-form" style="display: none;">
+    <div id="questions-container">
+      <!-- Questions will be appended here -->
+    </div>
+    <button type="submit">Generate Quiz</button>
+  </form>
+
+  <h2>Select a Quiz to Edit/Delete 🔎</h2>
+  <select id="quiz-select">
+    <option value="">Select a Quiz 🔎</option>
+  </select>
+  <div id="quiz-password-container" style="display: none;">
+    <label for="quiz-password-input">Enter Password:</label>
+    <input type="password" id="quiz-password-input" required>
+    <button id="verify-password">🔐 Verify</button>
+  </div>
+
+  <div id="edit-delete-container" style="display: none;">
+    <h2>📌 Edit Quiz</h2>
+    <div id="edit-questions-container">
+      <!-- Questions will be appended here for editing -->
+    </div>
+    <button id="save-changes">💾 Save Changes</button>
+    <button id="delete-quiz">❌ Delete Quiz</button>
+  </div>
+
+  <button id="to-quiz-page" onclick="window.location.href='quiz-page.html'">Go to Quiz Page 👉</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-analytics.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB2XkR_xL3hH7H4ksprXLtn9DnjyQNLG4E",
+      authDomain: "random-stuff-adj.firebaseapp.com",
+      projectId: "random-stuff-adj",
+      storageBucket: "random-stuff-adj.appspot.com",
+      messagingSenderId: "1005124695694",
+      appId: "1:1005124695694:web:c5dac2910efe64ad783bdf",
+      measurementId: "G-WRB7HS4W6F"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+
+    document.getElementById('initial-form').addEventListener('submit', showQuizForm);
+    document.getElementById('quiz-form').addEventListener('submit', saveQuiz);
+    document.getElementById('quiz-select').addEventListener('change', showPasswordPrompt);
+    document.getElementById('verify-password').addEventListener('click', verifyPassword);
+    document.getElementById('save-changes').addEventListener('click', saveChanges);
+    document.getElementById('delete-quiz').addEventListener('click', deleteQuiz);
+
+    loadQuizzes();
+
+    function showQuizForm(event) {
+      event.preventDefault();
+      const numQuestions = document.getElementById('num-questions').value;
+      generateQuestions(numQuestions);
+      document.getElementById('initial-form').style.display = 'none';
+      document.getElementById('quiz-form').style.display = 'block';
+    }
+
+    function generateQuestions(numQuestions) {
+      const container = document.getElementById('questions-container');
+      container.innerHTML = '';
+      for (let i = 1; i <= numQuestions; i++) {
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question';
+        questionDiv.innerHTML = `
+          <label for="question-${i}">Question ${i}</label>
+          <input type="text" id="question-${i}" name="question-${i}" required>
+          <div class="alternatives">
+            ${[1, 2, 3, 4].map(j => `
+              <label>
+                <input type="radio" name="correct-${i}" value="alt-${j}" required>
+                <input type="text" name="question-${i}-alt-${j}" placeholder="Alternative ${j}" required>
+              </label>
+            `).join('')}
+          </div>
+        `;
+        container.appendChild(questionDiv);
+      }
+    }
+
+    async function saveQuiz(event) {
+      event.preventDefault();
+      const quizName = document.getElementById('quiz-name').value;
+      const quizPassword = document.getElementById('quiz-password').value;
+      const quiz = { name: quizName, password: quizPassword, questions: [] };
+      const numQuestions = document.getElementById('num-questions').value;
+      for (let i = 1; i <= numQuestions; i++) {
+        const question = document.getElementById(`question-${i}`).value;
+        const alternatives = [];
+        let correctAlternative = '';
+        for (let j = 1; j <= 4; j++) {
+          const altInput = document.querySelector(`[name="question-${i}-alt-${j}"]`);
+          const altValue = altInput.value;
+          alternatives.push(altValue);
+          if (document.querySelector(`[name="correct-${i}"]:checked`).value === `alt-${j}`) {
+            correctAlternative = altValue;
+          }
+        }
+        quiz.questions.push({ question, alternatives, correct: correctAlternative });
+      }
+
+      try {
+        const docRef = await addDoc(collection(db, "quizzes"), quiz);
+        alert('Quiz saved successfully! Your quiz ID is: ' + docRef.id);
+        loadQuizzes();  // Reload quizzes to update the selection list
+      } catch (error) {
+        console.error('Error saving quiz:', error);
+      }
+    }
+
+    async function loadQuizzes() {
+      const quizSelect = document.getElementById('quiz-select');
+      quizSelect.innerHTML = '<option value="">Select a Quiz</option>'; // Clear previous options
+      const querySnapshot = await getDocs(collection(db, "quizzes"));
+      querySnapshot.forEach(doc => {
+        const option = document.createElement('option');
+        option.value = doc.id;
+        option.text = doc.data().name;
+        quizSelect.appendChild(option);
+      });
+    }
+
+    function showPasswordPrompt() {
+      const quizId = document.getElementById('quiz-select').value;
+      if (quizId) {
+        document.getElementById('quiz-password-container').style.display = 'block';
+      } else {
+        document.getElementById('quiz-password-container').style.display = 'none';
+        document.getElementById('edit-delete-container').style.display = 'none';
+      }
+    }
+
+    async function verifyPassword() {
+      const quizId = document.getElementById('quiz-select').value;
+      const quizPassword = document.getElementById('quiz-password-input').value;
+      
+      const docRef = doc(db, "quizzes", quizId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const quiz = docSnap.data();
+        if (quiz.password === quizPassword) {
+          displayQuizForEditing(quiz, quizId);
+        } else {
+          alert('Incorrect password.');
+        }
+      } else {
+        alert('Quiz not found.');
+      }
+    }
+
+    function displayQuizForEditing(quiz, quizId) {
+      document.getElementById('quiz-password-container').style.display = 'none';
+      document.getElementById('edit-delete-container').style.display = 'block';
+      document.getElementById('edit-delete-container').setAttribute('data-quiz-id', quizId);
+
+      const container = document.getElementById('edit-questions-container');
+      container.innerHTML = '';
+      quiz.questions.forEach((q, i) => {
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question';
+        questionDiv.innerHTML = `
+          <label for="edit-question-${i+1}">Question ${i+1}</label>
+          <input type="text" id="edit-question-${i+1}" name="edit-question-${i+1}" value="${q.question}" required>
+          <div class="alternatives">
+            ${q.alternatives.map((alt, j) => `
+              <label>
+                <input type="radio" name="edit-correct-${i+1}" value="alt-${j+1}" ${q.correct === alt ? 'checked' : ''} required>
+                <input type="text" name="edit-question-${i+1}-alt-${j+1}" value="${alt}" required>
+              </label>
+            `).join('')}
+          </div>
+        `;
+        container.appendChild(questionDiv);
+      });
+    }
+
+    async function saveChanges() {
+      const quizId = document.getElementById('edit-delete-container').getAttribute('data-quiz-id');
+      const docRef = doc(db, "quizzes", quizId);
+
+      const quiz = { questions: [] };
+      const numQuestions = document.querySelectorAll('.question').length;
+      for (let i = 1; i <= numQuestions; i++) {
+        const question = document.getElementById(`edit-question-${i}`).value;
+        const alternatives = [];
+        let correctAlternative = '';
+        for (let j = 1; j <= 4; j++) {
+          const altInput = document.querySelector(`[name="edit-question-${i}-alt-${j}"]`);
+          const altValue = altInput.value;
+          alternatives.push(altValue);
+          if (document.querySelector(`[name="edit-correct-${i}"]:checked`).value === `alt-${j}`) {
+            correctAlternative = altValue;
+          }
+        }
+        quiz.questions.push({ question, alternatives, correct: correctAlternative });
+      }
+
+      try {
+        await updateDoc(docRef, quiz);
+        alert('Quiz updated successfully!');
+      } catch (error) {
+        console.error('Error updating quiz:', error);
+      }
+    }
+
+    async function deleteQuiz() {
+      const quizId = document.getElementById('edit-delete-container').getAttribute('data-quiz-id');
+      const docRef = doc(db, "quizzes", quizId);
+
+      try {
+        await deleteDoc(docRef);
+        alert('Quiz deleted successfully!');
+        document.getElementById('edit-delete-container').style.display = 'none';
+        loadQuizzes();  // Reload quizzes to update the selection list
+      } catch (error) {
+        console.error('Error deleting quiz:', error);
+      }
+    }
+  </script>
+</body>
+</html>

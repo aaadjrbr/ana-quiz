@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Take Quiz 💭</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Take the Quiz 💭</h1>
+  <h2>How well do you know Ana? 👀</h2>
+  <button id="to-index-page" onclick="window.location.href='index.html'">Create Another Quiz ✍️</button>
+  <br/>
+  <select id="quiz-select">
+    <option value="">Select a Quiz 🔎</option>
+  </select>
+  <br/><br/><br/>
+  <div id="quiz-container"></div>
+  <label for="quiz-taker">Who is taking the quiz? 🤔</label>
+  <input type="text" id="quiz-taker" required>
+  <button id="submit-quiz">Submit Quiz ✨</button>
+
+  <h2>🎯 Quiz Results:</h2>
+  <div id="results-container"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getFirestore, collection, doc, getDocs, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "random-stuff-adj.firebaseapp.com",
+      projectId: "random-stuff-adj",
+      storageBucket: "random-stuff-adj.appspot.com",
+      messagingSenderId: "1005124695694",
+      appId: "1:1005124695694:web:c5dac2910efe64ad783bdf",
+      measurementId: "G-WRB7HS4W6F"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const quizSelect = document.getElementById('quiz-select');
+    const quizContainer = document.getElementById('quiz-container');
+    const resultsContainer = document.getElementById('results-container');
+
+    async function loadQuizzes() {
+      const querySnapshot = await getDocs(collection(db, "quizzes"));
+      querySnapshot.forEach(doc => {
+        const option = document.createElement('option');
+        option.value = doc.id;
+        option.text = doc.data().name;
+        quizSelect.appendChild(option);
+      });
+    }
+
+    loadQuizzes();
+
+    quizSelect.addEventListener('change', async () => {
+      const quizId = quizSelect.value;
+      if (quizId) {
+        const docRef = doc(db, "quizzes", quizId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const quiz = docSnap.data();
+          displayQuiz(quiz);
+          displayResults(quizId);
+        }
+      }
+    });
+
+    function displayQuiz(quiz) {
+      quizContainer.innerHTML = '';
+      quiz.questions.forEach((question, index) => {
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question';
+        questionDiv.innerHTML = `
+          <p>${question.question}</p>
+          ${question.alternatives.map((alt, i) => `
+            <label>
+              <input type="radio" name="question-${index}" value="${alt}" required>
+              ${alt}
+            </label>
+          `).join('')}
+        `;
+        quizContainer.appendChild(questionDiv);
+      });
+    }
+
+    document.getElementById('submit-quiz').addEventListener('click', async () => {
+      const quizId = quizSelect.value;
+      const quizTaker = document.getElementById('quiz-taker').value;
+      if (!quizTaker) {
+        alert('Please enter your name.');
+        return;
+      }
+      const answers = [];
+      document.querySelectorAll('.question').forEach((questionDiv, index) => {
+        const selected = questionDiv.querySelector(`[name="question-${index}"]:checked`);
+        if (selected) {
+          answers.push({ question: questionDiv.querySelector('p').innerText, answer: selected.value });
+        }
+      });
+
+      const docRef = doc(db, "quizzes", quizId);
+      const docSnap = await getDoc(docRef);
+      const quiz = docSnap.data();
+
+      let correctCount = 0;
+      answers.forEach((answerObj, index) => {
+        if (answerObj.answer === quiz.questions[index].correct) {
+          correctCount++;
+        }
+      });
+      const score = (correctCount / quiz.questions.length) * 100;
+      const date = new Date().toLocaleString();
+
+      await updateDoc(docRef, {
+        results: arrayUnion({ quizTaker, score, date })
+      });
+
+      alert(`Your score: ${score}%`);
+      displayResults(quizId);
+    });
+
+    async function displayResults(quizId) {
+      resultsContainer.innerHTML = '';
+      const docRef = doc(db, "quizzes", quizId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists() && docSnap.data().results) {
+        docSnap.data().results.forEach(result => {
+          const resultDiv = document.createElement('div');
+          resultDiv.className = 'result';
+          resultDiv.innerHTML = `
+            <p>Name: ${result.quizTaker}</p>
+            <p>Score: ${result.score}%</p>
+            <p>Date: ${result.date}</p>
+          `;
+          resultsContainer.appendChild(resultDiv);
+        });
+      }
+    }
+  </script>
+</body>
+</html>

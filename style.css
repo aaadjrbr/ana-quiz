@@ -1,0 +1,123 @@
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Lobster&display=swap');
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background: linear-gradient(to right, #ff7e5f, #feb47b); /* Gradient background */
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 30px;
+}
+
+h1 {
+  font-family: 'Lobster', cursive;
+  font-size: 2.5em;
+  color: #fff;
+  margin-top: 20px;
+  text-align: center;
+}
+
+h2 {
+  font-size: 1em;
+}
+
+div.question p {
+  font-size: 1.5em;
+  background-color: #b8eaf7;
+  padding: 5px;
+  border-radius: 5px;
+}
+
+form, #quiz-form, #edit-delete-container, #quiz-password-container, #initial-form, #manage-form {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  max-width: 500px;
+  width: 90%;
+  margin: 20px 0;
+  box-sizing: border-box;
+}
+
+label {
+  display: block;
+  font-weight: 700;
+  margin: 10px 0 5px;
+  color: #333;
+}
+
+input[type="text"], input[type="password"], input[type="number"] {
+  width: calc(100% - 20px);
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 2px solid #ff7e5f;
+  border-radius: 10px;
+  font-size: 1em;
+}
+
+input[type="radio"] {
+  margin-right: 10px;
+}
+
+button {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(to right, #ff512f, #dd2476);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 1.2em;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+button:hover {
+  background: linear-gradient(to right, #dd2476, #ff512f);
+}
+
+select {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #ff7e5f;
+  border-radius: 10px;
+  font-size: 1em;
+  margin-bottom: 10px;
+}
+
+.question {
+  margin-bottom: 20px;
+  background-color: #ffffff63;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.alternatives {
+  margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+  h1 {
+    font-size: 2em;
+  }
+
+  form, #quiz-form, #edit-delete-container, #quiz-password-container, #initial-form, #manage-form {
+    padding: 15px;
+    border-radius: 10px;
+  }
+
+  button {
+    padding: 12px;
+    font-size: 1em;
+  }
+
+  input[type="text"], input[type="password"], input[type="number"], select {
+    width: 80%;
+    font-size: 0.9em;
+  }
+}
