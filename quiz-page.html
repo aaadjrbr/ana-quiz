@@ -11,6 +11,7 @@
   <h2>How well do you know Ana? 👀</h2>
   <button id="to-index-page" onclick="window.location.href='index.html'">Create Another Quiz ✍️</button>
   <br/>
+  <br/>
   <select id="quiz-select">
     <option value="">Select a Quiz 🔎</option>
   </select>
@@ -21,14 +22,16 @@
   <button id="submit-quiz">Submit Quiz ✨</button>
 
   <h2>🎯 Quiz Results:</h2>
+  <div id="highest-score-container"></div>
   <div id="results-container"></div>
+  <div id="pagination-container"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
     import { getFirestore, collection, doc, getDocs, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
+      apiKey: "AIzaSyB2XkR_xL3hH7H4ksprXLtn9DnjyQNLG4E",
       authDomain: "random-stuff-adj.firebaseapp.com",
       projectId: "random-stuff-adj",
       storageBucket: "random-stuff-adj.appspot.com",
@@ -42,7 +45,13 @@
 
     const quizSelect = document.getElementById('quiz-select');
     const quizContainer = document.getElementById('quiz-container');
+    const highestScoreContainer = document.getElementById('highest-score-container');
     const resultsContainer = document.getElementById('results-container');
+    const paginationContainer = document.getElementById('pagination-container');
+
+    let currentPage = 1;
+    const resultsPerPage = 5;
+    let currentResults = [];
 
     async function loadQuizzes() {
       const querySnapshot = await getDocs(collection(db, "quizzes"));
@@ -125,19 +134,57 @@
 
     async function displayResults(quizId) {
       resultsContainer.innerHTML = '';
+      highestScoreContainer.innerHTML = '';
+      paginationContainer.innerHTML = '';
       const docRef = doc(db, "quizzes", quizId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists() && docSnap.data().results) {
-        docSnap.data().results.forEach(result => {
-          const resultDiv = document.createElement('div');
-          resultDiv.className = 'result';
-          resultDiv.innerHTML = `
-            <p>Name: ${result.quizTaker}</p>
-            <p>Score: ${result.score}%</p>
-            <p>Date: ${result.date}</p>
+        currentResults = docSnap.data().results.sort((a, b) => b.score - a.score);
+        
+        // Display the highest score
+        if (currentResults.length > 0) {
+          const highestScore = currentResults[0];
+          highestScoreContainer.innerHTML = `
+            <h3>🏆🔥 Highest Score:</h3>
+            <p><span class="result-name">✨ ${highestScore.quizTaker} ✨</span></p>
+            <p>🎯 Score: ${highestScore.score}%</p>
+            <p><span class="result-date">Date: ${highestScore.date}</span></p>
           `;
-          resultsContainer.appendChild(resultDiv);
+        }
+
+        showPage(1);
+        setupPagination(currentResults.length);
+      }
+    }
+
+    function showPage(page) {
+      resultsContainer.innerHTML = '';
+      const start = (page - 1) * resultsPerPage;
+      const end = start + resultsPerPage;
+      const paginatedResults = currentResults.slice(start, end);
+
+      paginatedResults.forEach(result => {
+        const resultDiv = document.createElement('div');
+        resultDiv.className = 'result';
+        resultDiv.innerHTML = `
+          <p><span class="result-name">Name: ${result.quizTaker}</span></p>
+          <p>🎯 Score: ${result.score}%</p>
+          <p><span class="result-date">Date: ${result.date}</span></p>
+        `;
+        resultsContainer.appendChild(resultDiv);
+      });
+    }
+
+    function setupPagination(totalResults) {
+      const totalPages = Math.ceil(totalResults / resultsPerPage);
+      for (let i = 1; i <= totalPages; i++) {
+        const pageButton = document.createElement('button');
+        pageButton.textContent = i;
+        pageButton.addEventListener('click', () => {
+          currentPage = i;
+          showPage(i);
         });
+        paginationContainer.appendChild(pageButton);
       }
     }
   </script>

@@ -97,8 +97,37 @@ select {
   border-radius: 10px;
 }
 
+div.result {
+  margin-bottom: 20px;
+  background-color: #ffffff63;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+div#highest-score-container {
+  background-color: #37eb148f;
+  margin-bottom: 20px;
+  border: solid 2px #fff;;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.result-date {
+  font-size: 0.9em;
+  font-weight: bold;
+  color: #333;
+}
+
+.result-name {
+  font-size: 1.3em;
+}
+
 .alternatives {
   margin-top: 10px;
+}
+
+div#pagination-container button {
+  font-size: 0.9em;
 }
 
 @media (max-width: 600px) {
